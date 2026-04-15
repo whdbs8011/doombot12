@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Doom via js-dos</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #status {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 9999;
+        max-width: min(90vw, 720px);
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.84);
+        color: #f4efe4;
+        font: 12px/1.5 monospace;
+        white-space: pre-wrap;
+      }
+
+      #build {
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 10000;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: #7a0000;
+        color: #fff;
+        font: 700 12px/1 monospace;
+      }
+
+      #DOOM {
+        width: min(100vw, calc(100dvh * 4 / 3));
+        height: min(100dvh, calc(100vw * 3 / 4));
+        aspect-ratio: 4 / 3;
+      }
+
+      #DOOM > .dosbox-container {
+        width: 100% !important;
+        height: 100% !important;
+        display: block !important;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      #DOOM canvas {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      #DOOM > .dosbox-container > .dosbox-overlay {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      #DOOM > .dosbox-container > .dosbox-overlay {
+        background: #000 url("/DOOM.png") center center / cover no-repeat !important;
+      }
+    </style>
+    <script src="/js-dos-api.js"></script>
+  </head>
+  <body>
+    <div id="build">BUILD 2026-04-15-2235</div>
+    <div id="status">status: html loaded</div>
+    <div id="DOOM"></div>
+    <script>
+      const statusEl = document.getElementById("status");
+
+      function setStatus(message) {
+        if (statusEl) {
+          statusEl.textContent = `status: ${message}`;
+        }
+        console.log("[doom-activity]", message);
+      }
+
+      window.addEventListener("error", (event) => {
+        setStatus(`window error: ${event.message}`);
+      });
+
+      window.addEventListener("unhandledrejection", (event) => {
+        setStatus(`promise rejection: ${String(event.reason)}`);
+      });
+
+      const scriptTag = document.querySelector('script[src="/js-dos-api.js"]');
+      if (scriptTag) {
+        scriptTag.addEventListener("load", () => {
+          setStatus("js-dos-api.js loaded");
+        });
+        scriptTag.addEventListener("error", () => {
+          setStatus("failed to load /js-dos-api.js");
+        });
+      }
+
+      window.addEventListener("load", () => {
+        try {
+          setStatus(`window loaded | Dosbox=${typeof window.Dosbox}`);
+
+          if (typeof window.Dosbox !== "function") {
+            throw new Error(`window.Dosbox type=${typeof window.Dosbox}`);
+          }
+
+          new window.Dosbox({
+            id: "DOOM",
+            onload(instance) {
+              setStatus("Dosbox onload reached, launching zip");
+              instance.run(
+                "/DOOM-@evilution.zip",
+                "./DOOM/DOOM.EXE"
+              );
+            }
+            ,
+            onrun(_instance, app) {
+              setStatus(`Dosbox running: ${app}`);
+            }
+          });
+          setStatus("Dosbox constructor succeeded");
+        } catch (error) {
+          setStatus(`caught error: ${String(error)}`);
+        }
+      });
+    </script>
+  </body>
+</html>
